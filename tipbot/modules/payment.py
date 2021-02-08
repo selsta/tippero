@@ -22,19 +22,22 @@ from tipbot.command_manager import *
 
 last_wallet_update_time = None
 
-def GetTipbotAddress():
+def GetTipbotIntAddress():
   try:
-    j = SendWalletJSONRPCCommand("getaddress",None)
+    j = SendWalletJSONRPCCommand("make_integrated_address",None)
     if not "result" in j:
-      log_error('GetTipbotAddress: No result found in getaddress reply')
+      log_error('GetTipbotIntAddress: No result found in make_integrated_address reply')
       return None
     result = j["result"]
-    if not "address" in result:
-      log_error('GetTipbotAddress: No address found in getaddress reply')
+    if not "integrated_address" in result:
+      log_error('GetTipbotIntAddress: No integrated_address found in make_integrated_address reply')
       return None
-    return result["address"]
+    if not "payment_id" in result:
+      log_error('GetTipbotIntAddress: No payment_id found in make_integrated_address reply')
+      return None
+    return result
   except Exception,e:
-    log_error("GetTipbotAddress: Error retrieving %s's address: %s" % (config.tipbot_name, str(e)))
+    log_error("GetTipbotIntAddress: Error retrieving %s's integrated_address: %s" % (config.tipbot_name, str(e)))
     return None
 
 def UpdateCoin(data):
@@ -161,18 +164,14 @@ def UpdateCoin(data):
 def Deposit(link,cmd):
   Help(link)
 
-def RandomPaymentID(link,cmd):
-  link.send_private("  New payment ID: %s" % GetRandomPaymentID(link))
-
 def Help(link):
   GetAccount(link.identity())
-  link.send_private("You can send %s to your account using this address AND payment ID:" % coinspecs.name);
-  address=GetTipbotAddress() or 'ERROR'
-  link.send_private("  Address: %s" % address)
+  link.send_private("You can send %s to your account using this integrated address:" % coinspecs.name);
+  result=GetTipbotIntAddress() or 'ERROR'
+  SetPaymentID(link,result["payment_id"])
+  link.send_private("  Address: %s" % result["integrated_address"])
   if config.openalias_address != None:
     link.send_private("    (or %s when using OpenAlias)" % config.openalias_address)
-  link.send_private("  Use your primary payment ID: %s" % GetPaymentID(link))
-  link.send_private("  OR generate random payment ids at will with: !randompid")
   link.send_private("Incoming transactions are credited after %d confirmations" % config.payment_confirmations)
 
 RegisterModule({
@@ -186,11 +185,3 @@ RegisterCommand({
   'function': Deposit,
   'help': "Show instructions about depositing %s" % coinspecs.name
 })
-RegisterCommand({
-  'module': __name__,
-  'name': 'randompid',
-  'function': RandomPaymentID,
-  'registered': True,
-  'help': "Generate a new random payment ID"
-})
-
