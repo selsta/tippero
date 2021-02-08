@@ -170,8 +170,6 @@ def Help(link):
   result=GetTipbotIntAddress() or 'ERROR'
   SetPaymentID(link,result["payment_id"])
   link.send_private("  Address: %s" % result["integrated_address"])
-  if config.openalias_address != None:
-    link.send_private("    (or %s when using OpenAlias)" % config.openalias_address)
   link.send_private("Incoming transactions are credited after %d confirmations" % config.payment_confirmations)
 
 RegisterModule({
